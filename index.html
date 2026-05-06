@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <title>Estás invitado. ¡No puedes faltar!</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+
+        /* Generales */
+        :root {
+          /* Color principales */
+            --primary: #c5a059; --secondary: #1a1a1a; --accent: #e5e1d8;
+            --white: #ffffff; --bg: #fcfbf7;
+          /* Invitados */
+            --confirmed-soft: #8a9a5b; --confirmed-bg: #f9faf6;
+            --pending-soft: #94a3b8; --declined-soft: #a07b7b;
+            --updating-soft: #60a5fa;
+        }
+
+        /* General */
+        body { font-family: 'Lato', sans-serif; background-color: var(--bg); color: var(--secondary); }
+        h1, h2, h3 { font-family: 'Playfair Display', serif; }
+        .text-primary { color: var(--primary); }
+        .hero-gradient {
+            background: linear-gradient(rgba(252, 251, 247, 0.8), rgba(252, 251, 247, 0.8)), 
+                        url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1350&q=80');
+            background-size: cover; background-position: center;
+        }
+        .template { display: none;}
+
+        .card-corner-detail {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4rem;
+            height: 4rem;
+            border-top: 2px solid var(--primary);
+            border-right: 2px solid var(--primary);
+            margin-top: 1rem;
+            margin-right: 1rem;
+            opacity: 0.2;
+        }
+
+        /* Lazy load */
+        .lazy {
+            color: transparent !important;
+            background: #eeeeee;
+            background-image: linear-gradient(90deg, #eeeeee 0px, #f5f5f5 40px, #eeeeee 80px);
+            background-size: 200% 100%;
+            animation: lazy-shine 1.5s infinite linear;
+            border-radius: 4px;
+            user-select: none;
+        }
+        .lazy * { visibility: hidden; }
+        .lazy-gosth {}
+
+        @keyframes lazy-shine {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        /* Botón estándar primario */
+        .btn-outline {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.5rem 1rem;
+            transition: all 0.3s;
+            background-color: transparent;
+        }
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Invitados */
+        .card-guestlist-item { 
+            background-color: var(--white); 
+            border-left: 4px solid var(--pending-soft); 
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        /* Estado: CONFIRMADO */
+        .card-guestlist-item.confirmed { border-left-color: var(--confirmed-soft); }
+        .card-guestlist-item.confirmed .status-label { color: var(--confirmed-soft); }
+        .card-guestlist-item.confirmed .fa-status::before { content: "\f00c"; } /* fa-check */
+        .card-guestlist-item.confirmed .btn-outline { color: var(--confirmed-soft); border-color: var(--confirmed-soft); }
+        .card-guestlist-item.confirmed .btn-outline:hover {  color: white; background-color: var(--confirmed-soft); }
+
+        /* Estado: DECLINADO */
+        .card-guestlist-item.declined { border-left-color: var(--declined-soft); }
+        .card-guestlist-item.declined .status-label { color: var(--declined-soft); }
+        .card-guestlist-item.declined .fa-status::before { content: "\f00d"; } /* fa-xmark */
+        .card-guestlist-item.declined .btn-outline { color: var(--declined-soft); border-color: var(--declined-soft); }
+        .card-guestlist-item.declined .btn-outline:hover {  color: white; background-color: var(--declined-soft); }
+
+        /* Estado: PENDIENTE */
+        .card-guestlist-item.pending { border-left-color: var(--pending-soft); }
+        .card-guestlist-item.pending .status-label { color: var(--pending-soft); }
+        .card-guestlist-item.pending .fa-status::before { content: "\f017"; } /* fa-clock */
+        .card-guestlist-item.pending .btn-outline { display: none; }
+
+        /* Estado: UPDATING (Guardando cambios) */
+        .card-guestlist-item.updating { border-left-color: var(--updating-soft); }
+        .card-guestlist-item.updating .status-label { color: var(--updating-soft); }
+        .card-guestlist-item.updating .fa-status::before { 
+            content: "\f013"; /* fa-spinner (spinner: \f110, engranaje: \f013) */
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        .card-guestlist-item.updating .btn-outline { display: none; }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- UI FEEDBACK --- */
+        .saving-pulse { animation: pulse 1.5s infinite; pointer-events: none; }
+        @keyframes pulse {
+            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
+        }
+        .error-shake { animation: shake 0.5s; border-left-color: #ef4444 !important; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Elementos comunes */
+        .guest-input { border-bottom: 2px solid #e5e7eb; background: transparent; width: 100%; padding: 8px 4px; font-size: 0.875rem; outline: none; transition: 0.3s; }
+        .guest-input:focus { border-color: var(--primary); }
+        .btn-save { width: 100%; background-color: var(--secondary); color: white; padding: 0.75rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; transition: 0.3s; margin-top: 1.5rem; }
+        .btn-save:hover { background-color: var(--primary); }
+        .expandable-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out, opacity 0.3s; opacity: 0; }
+        .expanded .expandable-content { max-height: 600px; opacity: 1; margin-top: 1.5rem; }
+        
+        /* Tarjeta base unificada */
+        .card-elegant {
+            background-color: var(--white);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-bottom: 4px solid var(--primary);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        /* Loading overlay */
+        .loading-overlay { position: fixed; inset: 0; background: rgba(252, 251, 247, 0.9); display: flex; justify-content: center; align-items: center; z-index: 100; }
+
+
+        /* Timeline Styles */
+        .card-timeline-item {
+            position: relative;
+            padding-bottom: 2rem;
+            padding-left: 2rem;
+            border-left: 1px solid var(--accent);
+        }
+        .card-timeline-item:last-child {
+            border-left: 1px solid transparent;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 9px;
+            height: 9px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+
+    <!-- <div id="loading" class="loading-overlay italic text-[#c5a059] text-2xl">Cargando tu invitación...</div> -->
+
+    <!-- Cabecera -->
+    <header class="w-full hero-gradient text-center py-20 px-4 border-b border-[#c5a059] mb-12">
+        <p class="uppercase tracking-[0.3em] text-xs mb-6 text-gray-500 font-bold">Estás invitado a la boda de</p>
+        <h1 class="text-6xl md:text-8xl mb-6 italic text-primary">David & Aldara</h1>
+        <p class="text-xl md:text-2xl font-light italic text-gray-700">¡Queremos celebrarlo y no puedes faltar!</p>
+    </header>
+
+    <!-- Información principal simplificada -->
+    <section class="max-w-3xl w-full px-4 grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+
+        <!-- Fecha del evento -->
+        <div class="card-date text-center p-8 bg-white shadow-sm border-t-4 gold-border">
+            <span class="card-date-day lazy block text-primary text-3xl mb-2 italic">00</span>
+            <p class="card-date-month-year lazy uppercase tracking-widest text-sm font-bold">month YYYY</p>
+        </div>
+        <!-- Lugar del evento -->
+        <div class="card-place text-center p-8 bg-white shadow-sm border-t-4 gold-border">
+            <span class="card-place-name lazy block text-primary text-2xl mb-2 italic">Casa de Burgos</span>
+            <p class="card-place-region lazy uppercase tracking-widest text-sm font-bold">Madrid</p>
+            <a href="https://maps.app.goo.gl/NMvR3FE5Q9etoNTw8" target="_blank" class="card-place-url lazy text-[10px] text-primary underline mt-2 block italic uppercase tracking-widest">Ver ubicación</a>
+        </div>
+    </section>
+
+    <!-- Lista de invitados -->
+    <main class="max-w-3xl w-full px-4 mb-16">
+        <div class="card-elegant p-8 md:p-12">
+            <div class="card-corner-detail"></div>
+            <h2 class="text-4xl mb-12 text-center italic text-primary">R.S.V.P.</h2>
+            <div class="card-greeting">
+              <p class="card-greeting-txt lazy text-center text-gray-500 mb-10 tracking-widest text-xs uppercase" data-as-html>Hola NOMBRE FAMILIA, confirmar vuestra asistencia:</p>
+            </div>
+            <div class="card-guestlist" class="flex flex-col gap-6">
+
+              <div class="card-guestlist-item template p-6 shadow-sm pending">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="card-guestlist-item-name font-bold text-lg text-gray-700 block">Invitado</span>
+                    <span class="status-label text-[10px] uppercase font-bold">
+                      <i class="fa-solid fa-status mr-1"></i> <span class="card-guestlist-item-status txt">Estado</span>
+                    </span>
+                  </div>
+                  <button class="card-guestlist-item-btn-expand btn-outline">Editar</button>
+                </div>
+                <div class="expandable-content border-t mt-4">
+                  <div class="pt-6 space-y-4">
+                    <div class="card-guestlist-item-radio flex gap-4 mb-4">
+                      <label class="text-sm"><input type="radio" name="guest-radio" value="Si"> Asistiré</label>
+                      <label class="text-sm"><input type="radio" name="guest-radio" value="No"> No podré</label>
+                    </div>
+                    <input type="text" class="card-guestlist-item-allergens guest-input" placeholder="Alérgenos" value="">
+                    <input type="text" class="card-guestlist-item-song guest-input" placeholder="Canción" value="">
+                    <button class="card-guestlist-btn-save btn-save">Guardar</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-guestlist-item lazy-gosth p-6 shadow-sm pending">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="card-guestlist-item-name lazy font-bold text-lg text-gray-700 block">Nombre del invitado</span>
+                    <span class="status-label lazy text-[10px] uppercase font-bold">Estado del invitado</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-guestlist-item lazy-gosth p-6 shadow-sm pending">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="card-guestlist-item-name lazy font-bold text-lg text-gray-700 block">Nombre del invitado</span>
+                    <span class="status-label lazy text-[10px] uppercase font-bold">Estado del invitado</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Detalles del Evento (Cronograma) -->
+    <section class="max-w-3xl w-full px-4 mb-24">
+        <div class="card-elegant p-8 md:p-12">
+            <div class="card-corner-detail"></div>
+            <h2 class="text-4xl mb-12 text-center italic text-primary">Detalles del Evento</h2>
+            
+            <div class="card-timeline max-w-md mx-auto">
+
+                <div class="card-timeline-item template">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-timeline-item lazy-gosth">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour lazy text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="lazy flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-timeline-item lazy-gosth">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour lazy text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="lazy flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-timeline-item lazy-gosth">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour lazy text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="lazy flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-timeline-item lazy-gosth">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour lazy text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="lazy flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-timeline-item lazy-gosth">
+                    <div class="timeline-dot"></div>
+                    <div class="flex items-baseline gap-4">
+                        <span class="card-timeline-item-hour lazy text-primary font-bold italic w-16 text-right">00:00</span>
+                        <div class="lazy flex-1">
+                            <h4 class="card-timeline-item-name uppercase tracking-widest text-sm font-bold">Name</h4>
+                            <p class="card-timeline-item-desc text-xs text-gray-500">Description</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Cuenta atrás -->
+    <section class="max-w-3xl w-full px-4 mb-16 card-event-action">
+        <div class="card-countdown card-elegant p-8 md:p-12 text-center">
+            <div class="card-corner-detail"></div>
+            
+            <h2 class="text-4xl mb-12 text-center italic text-primary">¡No te lo pierdas!</h2>
+
+            <div class="flex justify-center gap-4 md:gap-8 mb-10">
+                <div class="lazy flex flex-col">
+                    <span class="card-countdown-days text-3xl md:text-5xl font-light text-gray-700">00</span>
+                    <span class="text-[10px] uppercase tracking-widest text-primary font-bold">Días</span>
+                </div>
+                <div class="lazy text-3xl md:text-5xl font-light text-primary">:</div>
+                <div class="lazy flex flex-col">
+                    <span class="card-countdown-hours text-3xl md:text-5xl font-light text-gray-700">00</span>
+                    <span class="text-[10px] uppercase tracking-widest text-primary font-bold">Horas</span>
+                </div>
+                <div class="lazy text-3xl md:text-5xl font-light text-primary">:</div>
+                <div class="lazy flex flex-col">
+                    <span class="card-countdown-minutes text-3xl md:text-5xl font-light text-gray-700">00</span>
+                    <span class="text-[10px] uppercase tracking-widest text-primary font-bold">Minutos</span>
+                </div>
+            </div>
+            
+            <div class="lazy flex justify-center">
+                <a href="#" target="_blank" class="card-countdown-link btn-outline inline-block">
+                    <i class="fa-brands fa-google mr-2"></i> Guardar en Google Calendar
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+
+        // ---------- Backend.js
+
+        class Backend {
+          constructor(scriptUrl) {
+              this.baseUrl = scriptUrl;
+              this._setDefaultHandlers();
+          }
+
+          _setDefaultHandlers() {
+              this.onSuccess = (data) => console.log("Respuesta recibida:", data);
+              this.onError = (err) => console.error("Error en API:", err);
+          }
+
+          // Éxito
+          withSuccessHandler(callback) {
+              this.onSuccess = callback;
+              return this; // Permite encadenamiento
+          }
+
+          // Error
+          withFailureHandler(callback) {
+              this.onError = callback;
+              return this;
+          }
+
+          // Get
+          async get(action, params = {}) {
+
+              const onSuccess = this.onSuccess;
+              const onError = this.onError;
+              this._setDefaultHandlers();
+
+              if(this._hasGoogle){
+                return await this._withGoogle(action,params, onSuccess, onError);
+              }
+
+              const url = new URL(this.baseUrl);
+              url.searchParams.append('action', action);
+              
+              for (const key in params) {
+                  url.searchParams.append(key, params[key]);
+              }
+              return this._execute(url, { method: 'GET' }, onSuccess, onError);
+          }
+
+          // Post
+          async post(action, payload = {}) {
+
+              const onSuccess = this.onSuccess;
+              const onError = this.onError;
+              this._setDefaultHandlers();
+
+              if(this._hasGoogle){
+                return this._withGoogle(action,payload, onSuccess, onError);
+              }
+
+              const body = {
+                  action: action,
+                  ...payload
+              };
+
+              return this._execute(this.baseUrl, {
+                  method: 'POST',
+                  mode: 'cors',
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                  body: JSON.stringify(body)
+              }, onSuccess, onError);
+          }
+
+          // Ejecutar
+          async _execute(url, options, onSuccess, onError) {
+              try {
+                  const response = await fetch(url, options);
+                  if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                  const data = await response.json();
+                  
+                  if (data.error) throw new Error(data.error);
+                  
+                  onSuccess(data);
+                  return data;
+              } catch (err) {
+                  onError(err);
+                  throw err;
+              }
+          }
+
+          // Google script
+          get _hasGoogle() {
+              try {
+                  return typeof google !== 'undefined' && !!google?.script?.run;
+              } catch (e) {
+                  return false;
+              }
+          }
+          async _withGoogle(action,args, onSuccess, onError){
+            console.log(action);
+            console.log(args);
+            return new Promise((resolve, reject) => {
+                google.script.run
+                    .withSuccessHandler(data => {
+                        console.log(data);
+                        onSuccess(data);
+                        resolve(data);
+                    })
+                    .withFailureHandler(err => {
+                        onError(err);
+                        reject(err);
+                    })[action](...Object.values(args)); 
+            });
+          }
+        };
+
+        // Api
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxu0Xg7DVzXHePKzSxs-ubHqDBR__jt-_K3cNgzhtYHHNa8Y8UQqXdKPKw1HqMpgqU40g/exec';
+        const hash = new URLSearchParams(window.location.search).get('id');
+        const api = new Backend(SCRIPT_URL, hash);
+
+        // Obtener datos
+        window.onload = () => {
+          
+            api.withSuccessHandler(config => {
+
+              // Titulo de la pagina
+              document.title = `${config.title} ¡No puedes faltar!`;
+
+              // Fecha del evento
+              hydrate('.card-date', config.date, dateDataMap);
+              // Lugar del evento
+              hydrate('.card-place', config.place, placeDataMap);
+              // Linea de tiempo
+              hydrate('.card-timeline', config.timeline, timelineDataMap);
+              // Cuenta atrás
+              hydrate('.card-countdown', config.calendar, countDownDataMap);
+              startCountdown(document.querySelector('.card-countdown'),config.calendar.start);
+            }).get('getEventSettings',{id:hash});
+            
+            api.withSuccessHandler(data => {
+                guestlistData = data.guests;
+                hydrate('.card-greeting',data, {'.card-greeting-txt':(data)=>`Hola <strong>${data.familyName}</strong>, confirmar vuestra asistencia:`})
+                hydrate('.card-guestlist', guestlistData, guestlistDataMap);
+            }).get('getGuestsByHash',{id:hash});
+
+        };
+
+        /**
+         * Hidrata un componente con datos de un JSON y gestiona estados de carga.
+         * @param {string} query - Selector del contenedor padre.
+         * @param {Object} data - Objeto con los datos (JSON).
+         * @param {Object} map - Mapeo de selectores hijos y funciones transformadoras.
+         */
+        const hydrate = (query, data, map = {}) => {
+            const parent = document.querySelector(query);
+            if (!parent) return;
+
+            let template;
+            if(Array.isArray(data)){
+              template = parent.querySelector('.template');
+            }
+            else data = [data];
+
+            // Iteramos sobre el mapa de configuración
+            data.forEach((data, index)=>{
+              const root = (template) ? template.cloneNode(true) : parent;
+              if(template) root.classList.remove('template');
+              Object.entries(map).forEach(([selector, transformFn]) => {
+                const target = root.querySelector(selector);
+                if (target) {
+                    // 1. Obtenemos el valor procesado mediante la función del mapa
+                    const val = transformFn(data, target, index);
+                    
+                    // 2. Inyectamos el valor
+                    if(val){
+                      target['asHtml' in target.dataset ? 'innerHTML' : 'textContent'] = val;
+                    }
+                    
+                    // 3. Limpiamos el estado de carga
+                    target.classList.remove('lazy');
+                    target.style.transition = "opacity 0.3s ease-in";
+
+                }
+              });
+              if(template) parent.append(root);
+            });
+
+            // Eliminamos el relleno
+            parent.querySelectorAll('.lazy-gosth').forEach(el => el.remove());
+            parent.querySelectorAll('.lazy').forEach(el => el.classList.remove('lazy'));
+        };
+
+
+        /**
+         * Hidratar la tarjeta con la fecha del evento
+         */
+
+        // Mapa de hidratación
+        const dateDataMap = {
+            '.card-date-day': (date) => new Date(date).getDate(),
+            '.card-date-month-year': (date) => {
+                date = new Date(date);
+                const locale = navigator.language || 'es-ES';
+                const month = new Intl.DateTimeFormat(locale, { month: 'long' }).format(date);
+                const year = date.getFullYear(); 
+                return `${month} ${year}`;
+            }
+        };
+
+        /**
+         * Hidratar la tarjeta del lugar del evento
+         */
+
+        // Mapa de hidratación
+        const placeDataMap = {
+            '.card-place-name': (data) => data.name,
+            '.card-place-region': (data) => data.region,
+            '.card-place-url': (data, target) => { target.href = data.url }
+        };
+
+        /**
+         * Hidratar el timeline
+         */
+
+        // Mapa de hidratación
+        const timelineDataMap = {
+            '.card-timeline-item-hour': (data) => data.hour,
+            '.card-timeline-item-name': (data) => data.name,
+            '.card-timeline-item-desc': (data) => data.desc,
+        };
+
+        /**
+         * Hidratar la invitacion
+         */
+        // Datos de invitados locales
+        let guestlistData = [];
+
+        // Mapa de hidratación
+        const guestlistDataMap = {
+            '.card-guestlist-item-name': (data) => data.name,
+            '.card-guestlist-item-status': (data,target) => {
+              const card = target.closest('.card-guestlist-item');
+              removeGuestListItemStatusStyle(card);
+              updateGuestListItemStatusStyle(card, data.status);
+              return getGuestListItemStatusTxt(data.status);
+            },
+            '.card-guestlist-item-btn-expand' (data,target) {target.addEventListener('click', (e) => toggleGuestCard(e.currentTarget.closest('.card-guestlist-item')))},
+            '.card-guestlist-item-radio *[value="Si"]': (data,target,index) => {
+              target.name = `${target.name}-${index}`;
+              if(data.status === 'Si') target.checked = true;
+            },
+            '.card-guestlist-item-radio *[value="No"]': (data,target,index) => {
+              target.name = `${target.name}-${index}`;
+              if(data.status === 'No') target.checked = true;
+            },
+            '.card-guestlist-item-allergens': (data, target) => {target.value=data.allergens},
+            '.card-guestlist-item-song': (data,target) => {target.value=data.song},
+            '.card-guestlist-btn-save' : (data, target, index) => { target.onclick = (e) => updateGuest(e, index)}
+        };
+
+        // Helpers
+        isValidGuestStatus = (status)=>['Si', 'No'].includes(status);
+
+        checkValidGuestStatus = (status)=>{
+          if(!isValidGuestStatus(status)){
+            throw new Error(`Invalid status: ${status}`);
+          }
+        }
+
+        isGuestListItem = (card) => card?.matches('.card-guestlist-item');
+
+        checkGuestListItem = (card) => {
+          if (!isGuestListItem(card)) {
+            throw new Error("Invalid element: .card-guestlist-item expected.");
+          }
+        };
+
+        getGuestListItemStatusTxt = (status)=>{
+          checkValidGuestStatus(status);
+          return status === 'Si' ? 'Confirmado' : (status === 'No' ? 'No asistirá' : 'Pendiente');
+        }
+
+        removeGuestListItemStatusStyle = (card) => card?.classList.remove('confirmed', 'declined', 'pending', 'updating');
+
+        updateGuestListItemStatusStyle = (card, status) =>{
+          checkGuestListItem(card);
+          checkValidGuestStatus(status);
+          const statusClass = status === 'Si' ? 'confirmed' : (status === 'No' ? 'declined' : 'pending');
+          card.classList.add(statusClass);
+        }
+
+        function toggleGuestCard(elm) {
+            elm.classList.toggle('expanded');
+        }
+
+        function updateGuest(e, index) {
+            const btnElm = e.currentTarget;
+            const cardElm = btnElm.closest('.card-guestlist-item');
+            const statusElm = cardElm.querySelector('.card-guestlist-item-status');
+            var guest = guestlistData[index];
+
+            // 1. Recolección de datos desde la UI
+            const status = cardElm.querySelector('input[name^="guest-radio"]:checked')?.value;
+            const allergens = cardElm.querySelector('.card-guestlist-item-allergens').value;
+            const song = cardElm.querySelector('.card-guestlist-item-song').value;
+
+            if (!status) return alert("Por favor, selecciona una opción de asistencia.");
+
+            // 2. UI: Guardando
+            btnElm.disabled = true;
+            removeGuestListItemStatusStyle(cardElm);
+            cardElm.classList.add('updating');
+            statusElm.innerText = 'Guardando';
+            toggleGuestCard(cardElm);
+
+            // 3. Comunicación con nuestra clase Backend (instanciado en api)
+            api.withSuccessHandler(() => {
+                // Sincronizamos el estado local
+                guest = { 
+                    ...guest, 
+                    status: status, 
+                    allergens: allergens, 
+                    song: song 
+                };
+
+                // UI: Estado Final (Éxito)
+                removeGuestListItemStatusStyle(cardElm);
+                updateGuestListItemStatusStyle(cardElm, status);
+                statusElm.innerText = getGuestListItemStatusTxt(status);
+                btnElm.disabled = false;
+
+            }).withFailureHandler((err) => {
+                // UI: Reversión en caso de error
+                console.error("Update error:", err);
+                btnElm.disabled = false;
+                cardElm.classList.add('error-shake');
+                removeGuestListItemStatusStyle(cardElm);
+                statusElm.innerText = "Error";
+
+                setTimeout(() => {
+                    cardElm.classList.remove('error-shake');
+                    updateGuestListItemStatusStyle(cardElm, guest.status); 
+                    statusElm.innerText = getGuestListItemStatusTxt(guest.status);
+                }, 2000);
+
+            }).post('updateGuestData', { 
+                id: hash,
+                name: guest.name, 
+                status: status, 
+                allergens: allergens, 
+                song: song 
+            });
+
+        }
+
+        /**
+         * Hidratar la cuenta atrás
+         */
+
+        // Mapeo de hidratación
+        const countDownDataMap = {
+          '.card-countdown-days': (data) => getCountDown(data.start).d,
+          '.card-countdown-hours': (data) => getCountDown(data.start).h,
+          '.card-countdown-minutes': (data) => getCountDown(data.start).m,
+          '.card-countdown-link': (data, target) => {
+                const baseUrl = "https://www.google.com/calendar/render?action=TEMPLATE";
+                //console.log(getCountDown(data.start));
+                const params = [
+                    `text=${encodeURIComponent(data.title)}`,
+                    `dates=${toGCData(data.start)}/${toGCData(data.end)}`,
+                    `details=${encodeURIComponent(data.details)}`,
+                    `location=${encodeURIComponent(data.location)}`,
+                    `ctz=${encodeURIComponent(data.timezone)}`
+                ].join('&');
+                target.href = `${baseUrl}&${params}`;
+          }
+        }
+
+        // Convertir la fecha en formato Google Calendar
+        const toGCData = (date) => new Date(date).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+        // Obtener la cuenta atrás
+        getCountDown = (date)=> {
+          date = new Date(date);
+          const now = new Date().getTime();
+          const distance = date - now;
+          return {
+            d : Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0'),
+            h : Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0'),
+            m : Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0')
+          }
+        }
+
+        // Iniciar el contador
+        function startCountdown(card,date) {
+
+            const elmDays = card.querySelector('.card-countdown-days');
+            const elmHours = card.querySelector('.card-countdown-hours');
+            const elmMinutes = card.querySelector('.card-countdown-minutes');
+
+            const update = () => {
+                const cd = getCountDown(date);
+                elmDays.innerText = cd.d;
+                elmHours.innerText = cd.h;
+                elmMinutes.innerText = cd.m;
+
+            };
+
+            setInterval(update, 60000); // Actualizar cada minuto
+        }
+
+    </script>
+</body>
+</html>
