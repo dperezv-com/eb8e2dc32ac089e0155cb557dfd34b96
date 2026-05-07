@@ -380,6 +380,40 @@
         </div>
     </section>
 
+    <!-- Regalos -->
+    <section class="max-w-3xl w-full px-4 mb-16">
+        <div class="card-elegant p-8 md:p-12 text-center">
+            <div class="card-corner-detail"></div>
+            
+            <i class="fa-solid fa-plane-departure text-primary text-3xl mb-6"></i>
+            <h2 class="text-4xl mb-8 italic text-primary">Regalo de Boda</h2>
+            
+            <div class="card-gifts-content max-w-lg mx-auto">
+                <p class="card-gifts-message lazy text-gray-500 mb-8 leading-relaxed">
+                    Vuestra presencia es nuestro mejor regalo...
+                </p>
+                
+                <div class="bg-[#f9f8f3] p-6 rounded border border-dashed border-[#c5a059]/30">
+                    <p class="text-xs uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Titulares</p>
+                    <p class="card-gifts-owner-name lazy text-lg text-gray-700 mb-4 italic">David y Aldara</p>
+                    
+                    <p class="text-xs uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">IBAN / Cuenta Bancaria</p>
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="relative w-full group cursor-pointer">
+                            <span class="card-gifts-iban lazy font-mono text-sm md:text-base tracking-wider text-gray-700 bg-white px-4 py-3 border border-gray-100 w-full block rounded shadow-sm">
+                                ESXX 0000 0000 0000 0000 0000
+                            </span>
+                            <i class="fa-regular fa-copy absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 group-hover:text-primary transition-colors"></i>
+                        </div>
+                        <span class="card-gifts-feedback text-[9px] uppercase tracking-widest text-confirmed-soft font-bold opacity-0 transition-opacity">
+                            ¡Copiado al portapapeles!
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <script>
 
         // ---------- Backend.js
@@ -516,6 +550,10 @@
               // Cuenta atrás
               hydrate('.card-countdown', config.calendar, countDownDataMap);
               startCountdown(document.querySelector('.card-countdown'),config.calendar.start);
+              
+              // Regalos
+              hydrate('.card-gifts-content', config.gifts, giftsDataMap);
+
             }).get('getEventSettings',{id:hash});
             
             api.withSuccessHandler(data => {
@@ -789,6 +827,30 @@
 
             setInterval(update, 60000); // Actualizar cada minuto
         }
+        
+        /**
+         * Hidratar la sección de regalos
+         */
+        const giftsDataMap = {
+          '.card-gifts-message': (data) => data.message,
+          '.card-gifts-owner-name': (data) => data.bankAccount.owner,
+          '.card-gifts-iban': (data) => data.bankAccount.iban,
+          '.card-gifts-iban': (data, target) => {
+              const iban = data.bankAccount.iban.replace(/\s+/g, '');
+              const container = target.parentElement;
+              const feedback = container.parentElement.querySelector('.card-gifts-feedback');
+              container.onclick = () => {
+                  navigator.clipboard.writeText(iban).then(() => {
+                      // Feedback visual
+                      feedback.classList.remove('opacity-0');
+                      setTimeout(() => {
+                          feedback.classList.add('opacity-0');
+                      }, 2000);
+                  });
+              };
+              return data.bankAccount.iban;
+          }
+        };
 
     </script>
 </body>
