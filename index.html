@@ -116,7 +116,8 @@
         .card-guestlist-item.pending { border-left-color: var(--pending-soft); }
         .card-guestlist-item.pending .status-label { color: var(--pending-soft); }
         .card-guestlist-item.pending .fa-status::before { content: "\f017"; } /* fa-clock */
-        .card-guestlist-item.pending .btn-outline { display: none; }
+        .card-guestlist-item.pending .btn-outline { color: var(--pending-soft); border-color: var(--pending-soft); }
+        .card-guestlist-item.pending .btn-outline:hover {  color: white; background-color: var(--pending-soft); }
 
         /* Estado: UPDATING (Guardando cambios) */
         .card-guestlist-item.updating { border-left-color: var(--updating-soft); }
@@ -233,7 +234,7 @@
                       <i class="fa-solid fa-status mr-1"></i> <span class="card-guestlist-item-status txt">Estado</span>
                     </span>
                   </div>
-                  <button class="card-guestlist-item-btn-expand btn-outline">Editar</button>
+                  <button class="card-guestlist-item-btn-expand btn-outline">Confirmar asistencia</button>
                 </div>
                 <div class="expandable-content border-t mt-4">
                   <div class="pt-6 space-y-4">
@@ -663,7 +664,7 @@
               updateGuestListItemStatusStyle(card, data.status);
               return getGuestListItemStatusTxt(data.status);
             },
-            '.card-guestlist-item-btn-expand' (data,target) {target.addEventListener('click', (e) => toggleGuestCard(e.currentTarget.closest('.card-guestlist-item')))},
+            '.card-guestlist-item-btn-expand' (data,target) {target.parentElement.addEventListener('click', (e) => toggleGuestCard(e.currentTarget.closest('.card-guestlist-item')))},
             '.card-guestlist-item-radio *[value="Si"]': (data,target,index) => {
               target.name = `${target.name}-${index}`;
               if(data.status === 'Si') target.checked = true;
@@ -678,7 +679,7 @@
         };
 
         // Helpers
-        isValidGuestStatus = (status)=>['Si', 'No'].includes(status);
+        isValidGuestStatus = (status)=>['Si', 'No', 'Pendiente'].includes(status);
 
         checkValidGuestStatus = (status)=>{
           if(!isValidGuestStatus(status)){
